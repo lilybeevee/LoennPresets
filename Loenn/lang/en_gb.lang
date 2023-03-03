@@ -1,0 +1,17 @@
+tools.name.presets=Presets
+
+ui.LoennPresets.preset_context_window.title=Editing Preset
+
+ui.LoennPresets.preset_context_window.button.save_changes=Save Changes
+ui.LoennPresets.preset_context_window.button.edit_properties=Edit Properties
+ui.LoennPresets.preset_context_window.button.delete=Delete
+ui.LoennPresets.preset_context_window.button.add_preset=Add Preset
+
+ui.LoennPresets.preset_context_window.field.name.name=Name
+ui.LoennPresets.preset_context_window.field.name.description=The name of the preset
+ui.LoennPresets.preset_context_window.field.keepSize.name=Keep Size
+ui.LoennPresets.preset_context_window.field.keepSize.description=If enabled, the size of the preset will be kept when placed and rectangle/line placement modes will be ignored
+ui.LoennPresets.preset_context_window.field.favorite.name=Favorite
+ui.LoennPresets.preset_context_window.field.favorite.description=Whether the preset is favorited in the placements menu
+
+ui.LoennPresets.preset_property_context_window.title=Editing Properties
