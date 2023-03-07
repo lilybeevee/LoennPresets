@@ -1,5 +1,8 @@
 tools.name.presets=Presets
 
+layers.name.presetGroups=Preset Groups
+
+# Preset editing window
 ui.LoennPresets.preset_context_window.title=Editing Preset
 
 ui.LoennPresets.preset_context_window.button.save_changes=Save Changes
@@ -14,4 +17,17 @@ ui.LoennPresets.preset_context_window.field.keepSize.description=If enabled, the
 ui.LoennPresets.preset_context_window.field.favorite.name=Favorite
 ui.LoennPresets.preset_context_window.field.favorite.description=Whether the preset is favorited in the placements menu
 
+# Preset's entity properties window
 ui.LoennPresets.preset_property_context_window.title=Editing Properties
+
+# Group editing window
+ui.LoennPresets.group_context_window.title.new=Creating Group
+ui.LoennPresets.group_context_window.title.edit=Editing Group
+
+ui.LoennPresets.group_context_window.button.save_changes=Save Changes
+ui.LoennPresets.group_context_window.button.delete=Delete
+ui.LoennPresets.group_context_window.button.create=Create New
+ui.LoennPresets.group_context_window.button.create_from_current=Copy Current Presets
+
+ui.LoennPresets.group_context_window.field.name.name=Name
+ui.LoennPresets.group_context_window.field.name.description=The name of the preset

@@ -71,14 +71,16 @@ function contextWindow.saveChangesCallback(preset, formData, new)
             presets.removePreset(preset.layer, preset)
         end
 
-        preset.name = newData.name
+        if not preset.global then
+            preset.name = newData.name
+        end
         preset.keepSize = newData.keepSize
 
         presets.addPreset(preset.layer, preset)
 
         updateFavorites(preset.layer, oldName, newName, newData.favorite)
 
-        sceneHandler.sendEvent("loennPresetsUpdated", preset.layer)
+        sceneHandler.sendEvent("loennPresetsUpdated")
 
         window:removeSelf()
     end
@@ -92,9 +94,16 @@ end
 
 function contextWindow.deleteCallback(preset)
     return function()
+        if preset.global then
+            -- should never happen
+            return
+        end
+
         presets.removePreset(preset.layer, preset)
 
-        sceneHandler.sendEvent("loennPresetsUpdated", preset.layer)
+        updateFavorites(preset.layer, preset.name, "", false)
+
+        sceneHandler.sendEvent("loennPresetsUpdated")
 
         window:removeSelf()
     end
@@ -121,6 +130,10 @@ local function prepareFormData(preset, language, new)
         keepSize = preset.keepSize or false,
         favorite = new or isPresetFavorited(preset.layer, preset.name)
     }
+
+    if preset.global then
+        formData.name = nil
+    end
 
     local fieldInformation = {
         name = {
@@ -164,7 +177,7 @@ function contextWindow.createContextMenu(preset, new)
         }
     }
 
-    if not new then
+    if not new and not preset.global then
         table.insert(buttons,{
             text = tostring(language.ui.LoennPresets.preset_context_window.button.delete),
             callback = contextWindow.deleteCallback(preset)

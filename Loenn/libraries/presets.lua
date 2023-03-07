@@ -9,9 +9,17 @@ local languageRegistry = require("language_registry")
 local debugUtils = require("debug_utils")
 local sceneHandler = require("scene_handler")
 
+local presetUtils = modHandler.requireFromPlugin("libraries.preset_utils")
+local presetGroups = modHandler.requireFromPlugin("libraries.preset_groups")
 local placementRefreshDevice = modHandler.requireFromPlugin("input_devices.placement_refresh_device")
+local groupPersistenceDevice = modHandler.requireFromPlugin("input_devices.group_persistence_device")
 
 local presets = {}
+
+presets.layers = {
+    "entities",
+    "triggers"
+}
 
 function presets.getRegisteredPresets(layer)
     local registry = persistence.loennPresetsPluginRegistry
@@ -20,7 +28,7 @@ function presets.getRegisteredPresets(layer)
         return registry and registry[layer] or {}
     end
 
-    return registry
+    return registry or {}
 end
 
 function presets.setRegisteredPresets(layer, newRegistry)
@@ -260,17 +268,26 @@ function presets.loadHooks()
     local prevHook = LOENNPRESETS_HOOKED
 
     if prevHook then
-        if prevHook.entities then entities.getPlacements = prevHook.entities end
-        if prevHook.triggers then triggers.getPlacements = prevHook.triggers end
+        if prevHook.entities     then entities.getPlacements  = prevHook.entities     end
+        if prevHook.triggers     then triggers.getPlacements  = prevHook.triggers     end
+        if prevHook.reloadScenes then debugUtils.reloadScenes = prevHook.reloadScenes end
     end
 
     LOENNPRESETS_HOOKED = {
-        entities = entities.getPlacements,
-        triggers = triggers.getPlacements,
+        entities     = entities.getPlacements,
+        triggers     = triggers.getPlacements,
+        reloadScenes = debugUtils.reloadScenes
     }
 
     entities.getPlacements = hookPlacementFunction(entities.getPlacements, "entities")
     triggers.getPlacements = hookPlacementFunction(triggers.getPlacements, "triggers")
+
+    local oldReloadScenes = debugUtils.reloadScenes
+    debugUtils.reloadScenes = function(...)
+        -- make sure we add our devices to the correct scene
+        oldReloadScenes(...)
+        presets.loadDevices()
+    end
 end
 
 -- TODO: stops working after reloading everything. why?
@@ -285,9 +302,14 @@ function presets.loadDevices()
     end
 
     inputDevice.newInputDevice(scene.inputDevices, placementRefreshDevice)
+    inputDevice.newInputDevice(scene.inputDevices, groupPersistenceDevice)
 end
 
-presets.loadHooks()
-presets.loadDevices()
+if presetUtils.checkVersion() then
+    presets.loadHooks()
+    presets.loadDevices()
+
+    presetGroups.init(presets)
+end
 
 return presets

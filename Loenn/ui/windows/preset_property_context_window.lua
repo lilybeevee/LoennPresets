@@ -46,6 +46,8 @@ function contextWindow.saveChangesCallback(preset, dummyData)
         for k, v in pairs(newData) do
             preset.data[k] = v
         end
+
+        window:removeSelf()
     end
 end
 
