@@ -331,6 +331,11 @@ function presetGroups.setCurrent(name, createIfMissing, copyGroup)
     presetGroups.current = name
     presetGroups.updatePersistence()
 
+    if oldName == "global" then
+        -- we need to reload the global group, as it may have been modified by the save
+        globalGroup = presetGroups.getGroup("global")
+    end
+
     loadFavorites(name, newGroup, globalGroup)
     loadPresets(name, newGroup, globalGroup)
 
