@@ -1,6 +1,5 @@
 local modHandler = require("mods")
 local utils = require("utils")
-local persistence = require("persistence")
 local entities = require("entities")
 local triggers = require("triggers")
 local inputDevice = require("input_device")
@@ -8,6 +7,9 @@ local logging = require("logging")
 local languageRegistry = require("language_registry")
 local debugUtils = require("debug_utils")
 local sceneHandler = require("scene_handler")
+
+local persistence = modHandler.getModPersistence()
+local settings = modHandler.getModSettings()
 
 local presetUtils = modHandler.requireFromPlugin("libraries.preset_utils")
 local presetGroups = modHandler.requireFromPlugin("libraries.preset_groups")
@@ -22,7 +24,7 @@ presets.layers = {
 }
 
 function presets.getRegisteredPresets(layer)
-    local registry = persistence.loennPresetsPluginRegistry
+    local registry = settings.presets
 
     if layer then
         return registry and registry[layer] or {}
@@ -32,11 +34,13 @@ function presets.getRegisteredPresets(layer)
 end
 
 function presets.setRegisteredPresets(layer, newRegistry)
-    local registry = persistence.loennPresetsPluginRegistry or {}
+    local registry = settings.presets or {}
 
     registry[layer] = utils.deepcopy(newRegistry)
 
-    persistence.loennPresetsPluginRegistry = registry
+    settings.presets = registry
+
+    presetUtils.saveSettings()
 end
 
 function presets.getPreset(layer, name)

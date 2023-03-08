@@ -1,5 +1,7 @@
 local version = require("utils.version_parser")
 local meta = require("meta")
+local modHandler = require("mods")
+local config = require("utils.config")
 
 local presetUtils = {}
 
@@ -15,6 +17,10 @@ end
 
 function presetUtils.checkVersion()
     return meta.version == version("0.5.1") or meta.version == version("0.0.0-dev")
+end
+
+function presetUtils.saveSettings()
+    config.writeConfig(modHandler.getModSettings(), true)
 end
 
 return presetUtils

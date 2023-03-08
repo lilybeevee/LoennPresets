@@ -1,11 +1,13 @@
 local state = require("loaded_state")
 local modHandler = require("mods")
 local utils = require("utils")
-local persistence = require("persistence")
 local sceneHandler = require("scene_handler")
 local toolHandler = require("tools")
 local toolUtils = require("tool_utils")
 local logging = require("logging")
+
+local persistence = modHandler.getModPersistence()
+local settings = modHandler.getModSettings()
 
 local presetUtils = modHandler.requireFromPlugin("libraries.preset_utils")
 local presets
@@ -18,33 +20,35 @@ presetGroups.current = "global"
 function presetGroups.init(_presets)
     presets = _presets
 
-    presetGroups.current = persistence.loennPresetsPluginCurrentGroup
+    presetGroups.current = persistence.currentGroup
 
     if not presetGroups.current or not presetGroups.getGroup(presetGroups.current) then
         presetGroups.setCurrent(presetGroups.getFirstAvailableGroup())
     end
 end
 
-function presetGroups.getPersistenceGroups()
-    return persistence.loennPresetsPluginGroups or {
+function presetGroups.getSavedGroups()
+    return settings.groups or {
         ["global"] = {}
     }
 end
 
-function presetGroups.setPersistenceGroups(value)
-    persistence.loennPresetsPluginGroups = value
+function presetGroups.setSavedGroups(value)
+    settings.groups = value
+
+    presetUtils.saveSettings()
 end
 
 function presetGroups.getPersistenceGroupForMap(filename)
-    return utils.getPath(persistence, {"loennPresetsPluginCurrentGroupForMap", filename})
+    return utils.getPath(persistence, {"mapGroup", filename})
 end
 
 function presetGroups.setPersistenceGroupForMap(filename, group)
-    utils.setPath(persistence, {"loennPresetsPluginCurrentGroupForMap", filename}, group, true)
+    utils.setPath(persistence, {"mapGroup", filename}, group, true)
 end
 
 function presetGroups.getGroup(name)
-    local groups = presetGroups.getPersistenceGroups()
+    local groups = presetGroups.getSavedGroups()
 
     if not name then
         name = presetGroups.current
@@ -56,11 +60,11 @@ end
 function presetGroups.setGroup(name, value)
     if not name then return end
 
-    local groups = presetGroups.getPersistenceGroups()
+    local groups = presetGroups.getSavedGroups()
 
     groups[name] = value
 
-    presetGroups.setPersistenceGroups(groups)
+    presetGroups.setSavedGroups(groups)
 end
 
 function presetGroups.updateGroup(name, func)
@@ -296,7 +300,7 @@ function presetGroups.updatePersistence()
     if state.filename then
         presetGroups.setPersistenceGroupForMap(state.filename, presetGroups.current)
     end
-    persistence.loennPresetsPluginCurrentGroup = presetGroups.current
+    persistence.currentGroup = presetGroups.current
 end
 
 function presetGroups.setCurrent(name, createIfMissing, copyGroup)

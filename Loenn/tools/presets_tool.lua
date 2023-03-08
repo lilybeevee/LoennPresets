@@ -91,7 +91,7 @@ local function updateGroups(sendEvent)
         ["< Global Group >"] = {type = "group", name = "global"}
     }
 
-    local groups = presetGroups.getPersistenceGroups()
+    local groups = presetGroups.getSavedGroups()
     for name, group in pairs(groups) do
         if name ~= "global" then
             table.insert(groupsAvailable, name)
