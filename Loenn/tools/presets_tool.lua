@@ -152,9 +152,8 @@ function tool.setMaterial(material)
         elseif data.type == "group" then
             if presetGroups.current ~= data.name then
                 if presetGroups.setCurrent(data.name) then
-                    tool.material = material
                     notifications.notify("Switched preset group to " .. material)
-                    return false
+                    tool.material = material
                 else
                     -- Selected group does not exist
                     toolUtils.sendMaterialEvent(tool, tool.layer, "")
