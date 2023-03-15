@@ -22,9 +22,20 @@ function presetGroups.init(_presets)
 
     presetGroups.current = persistence.currentGroup
 
-    if not presetGroups.current or not presetGroups.getGroup(presetGroups.current) then
-        presetGroups.setCurrent(presetGroups.getFirstAvailableGroup())
+    if not presetGroups.current then
+        if not settings.groups ~= nil then
+            -- Not first launch, keep current favorites/presets in a new group
+            presetGroups.setGroup("Unsaved Group", {})
+            presetGroups.current = "Unsaved Group"
+        else
+            -- First launch, go to the global group by default
+            presetGroups.current = "global"
+        end
+    elseif not presetGroups.getGroup(presetGroups.current) then
+        presetGroups.setGroup(presetGroups.current, {})
     end
+
+    persistence.currentGroup = presetGroups.current
 end
 
 function presetGroups.getSavedGroups()

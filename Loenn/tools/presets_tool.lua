@@ -121,13 +121,13 @@ function tool.setLayer(layer)
             updatePresets(layer)
             tool.material = ""
         end
-
-        -- Actually refresh the list
-        toolUtils.sendLayerEvent(tool, "temp")
-        toolUtils.sendLayerEvent(tool, layer)
-
-        toolUtils.sendMaterialEvent(tool, layer, tool.material)
     end
+
+    -- Actually refresh the list
+    toolUtils.sendLayerEvent(tool, "temp")
+    toolUtils.sendLayerEvent(tool, layer)
+
+    toolUtils.sendMaterialEvent(tool, layer, tool.material)
 end
 
 function tool.setMaterial(material)
@@ -152,8 +152,9 @@ function tool.setMaterial(material)
         elseif data.type == "group" then
             if presetGroups.current ~= data.name then
                 if presetGroups.setCurrent(data.name) then
-                    notifications.notify("Switched preset group to " .. material)
                     tool.material = material
+                    notifications.notify("Switched preset group to " .. material)
+                    return false
                 else
                     -- Selected group does not exist
                     toolUtils.sendMaterialEvent(tool, tool.layer, "")
@@ -212,8 +213,10 @@ function tool.loennPresetsUpdated()
 
     updatePresets(layer)
 
-    toolUtils.sendLayerEvent(tool, "temp")
-    toolUtils.sendLayerEvent(tool, layer)
+    if layer ~= "presetGroups" then
+        toolUtils.sendLayerEvent(tool, "temp")
+        toolUtils.sendLayerEvent(tool, layer)
+    end
 end
 
 function tool.loennPresetsGroupsUpdated()
