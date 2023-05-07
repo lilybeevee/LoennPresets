@@ -121,23 +121,28 @@ end
 
 -- Copied from Loenn
 local function guessPlacementFromData(item, name, handler)
-    local placements = utils.callIfFunction(handler.placements)
+    if handler then
+        local placements = utils.callIfFunction(handler.placements)
 
-    if placements then
-        if #placements > 0 then
-            return placements[1]
+        if placements then
+            if #placements > 0 then
+                return placements[1]
 
-        else
-            return placements
+            else
+                return placements
+            end
         end
     end
+
+    return {
+        name = name,
+        data = {}
+    }
 end
 
 function presets.getEntityPlacement(preset)
     local entityName = preset.data._name
     local handler = entities.registeredEntities[entityName]
-
-    if not handler then return end
 
     local sourcePlacement = guessPlacementFromData(preset.data, entityName, handler)
     local placementName = "LoennPresets#" .. preset.name
@@ -179,8 +184,6 @@ function presets.getTriggerPlacement(preset)
     local triggerName = preset.data._name
     local handler = triggers.registeredTriggers[triggerName]
 
-    if not handler then return end
-
     local sourcePlacement = guessPlacementFromData(preset.data, triggerName, handler)
     local placementType = preset.keepSize and "point" or "rectangle"
     local placementName = "LoennPresets#" .. preset.name
@@ -219,8 +222,6 @@ function presets.newPresetFromItem(layer, item)
 
     if layer == "entities" then handler = entities.registeredEntities[item._name] end
     if layer == "triggers" then handler = triggers.registeredTriggers[item._name] end
-
-    if not handler then return end
 
     local placement = guessPlacementFromData(item, item._name, handler)
     local language = languageRegistry.getLanguage()
