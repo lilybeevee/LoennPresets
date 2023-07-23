@@ -119,14 +119,22 @@ local function guessPlacementType(name, handler, placement)
     return "point"
 end
 
--- Copied from Loenn
-local function guessPlacementFromData(item, name, handler)
+local function guessPlacementFromData(item, name, handler, default)
+    local fallback = {
+        name = name,
+        data = {}
+    }
+
     if handler then
         local placements = utils.callIfFunction(handler.placements)
 
         if placements then
             if #placements > 0 then
-                return placements[1]
+                if default then
+                    return placements.default or fallback
+                else
+                    return placements[1]
+                end
 
             else
                 return placements
@@ -134,25 +142,17 @@ local function guessPlacementFromData(item, name, handler)
         end
     end
 
-    return {
-        name = name,
-        data = {}
-    }
+    return fallback
 end
 
 function presets.getEntityPlacement(preset)
     local entityName = preset.data._name
     local handler = entities.registeredEntities[entityName]
 
-    local sourcePlacement = guessPlacementFromData(preset.data, entityName, handler)
+    local sourcePlacement = guessPlacementFromData(preset.data, entityName, handler, false)
     local placementName = "LoennPresets#" .. preset.name
     local presetSuffix = string.format(modHandler.modNamesFormat, "Preset")
     local displayName = table.concat({preset.name, presetSuffix}, " ")
-
-    local placementType = "point"
-    if not preset.keepSize then
-        placementType = sourcePlacement.placementType or guessPlacementType(entityName, handler, sourcePlacement)
-    end
 
     local itemTemplate = {
         _name = entityName,
@@ -165,6 +165,20 @@ function presets.getEntityPlacement(preset)
 
     itemTemplate.x = itemTemplate.x or 0
     itemTemplate.y = itemTemplate.y or 0
+
+    local placementType = "point"
+    if not preset.keepSize then
+        placementType = sourcePlacement.placementType or guessPlacementType(entityName, handler, sourcePlacement)
+
+        -- Minimize placement size if possible
+        local defaultPlacement = guessPlacementFromData(preset.data, entityName, handler, true)
+
+        local sourceWidth = sourcePlacement.data.width or defaultPlacement.data.width
+        local sourceHeight = sourcePlacement.data.height or defaultPlacement.data.height
+
+        itemTemplate.width = sourceWidth or itemTemplate.width
+        itemTemplate.height = sourceHeight or itemTemplate.height
+    end
 
     local associatedMods = sourcePlacement.associatedMods or entities.associatedMods(itemTemplate)
 
