@@ -29,6 +29,9 @@ tool.validLayers = {
 
 tool.material = ""
 
+local noPresetMat = " ### PRESETS ### "
+local noGroupMat = " ### GROUPS ### "
+
 local presetsAvailable
 local presetData
 
@@ -44,7 +47,9 @@ local function sendGroupContextMenuEvent(groupName, new)
 end
 
 local function updatePresets(layer)
-    presetsAvailable = {}
+    presetsAvailable = {
+        noPresetMat
+    }
     presetData = {}
 
     local registry = presets.getRegisteredPresets(layer)
@@ -83,12 +88,13 @@ end
 
 local function updateGroups(sendEvent)
     groupsAvailable = {
-        "< New ... >",
-        "< Global Group >"
+        noGroupMat,
+        " < New ... > ",
+        " < Global Group > "
     }
     groupData = {
-        ["< New ... >"] = {type = "new"},
-        ["< Global Group >"] = {type = "group", name = "global"}
+        [" < New ... > "] = {type = "new"},
+        [" < Global Group > "] = {type = "group", name = "global"}
     }
 
     local groups = presetGroups.getSavedGroups()
@@ -102,11 +108,16 @@ local function updateGroups(sendEvent)
 
     if sendEvent then
         local layer = tool.layer
+
+        updateSelectedGroup(true)
+
         toolUtils.sendLayerEvent(tool, "temp")
         toolUtils.sendLayerEvent(tool, layer)
-    end
 
-    updateSelectedGroup(sendEvent)
+        toolUtils.sendMaterialEvent(tool, tool.layer, tool.material)
+    else
+        updateSelectedGroup()
+    end
 
     return groupsAvailable
 end
@@ -131,6 +142,17 @@ function tool.setLayer(layer)
 end
 
 function tool.setMaterial(material)
+    if material == "" or material == noPresetMat then
+        tool.material = ""
+        toolUtils.sendMaterialEvent(tool, tool.layer, "")
+        return false
+    end
+
+    if material == noGroupMat then
+        updateSelectedGroup(true)
+        return false
+    end
+
     if tool.layer ~= "presetGroups" then
         local presetName = presetData[material] or ""
 
