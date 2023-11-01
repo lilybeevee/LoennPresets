@@ -20,7 +20,7 @@ function device.update(dt)
     local toolLayer = tool.layer
 
     -- force the placement tool to update its list of placements
-    tool.editorShownDependenciesChanged()
+    tool.editorShownDependenciesChanged(tool.layer)
 
     -- refresh the ui
     toolUtils.sendLayerEvent(tool, "temp")

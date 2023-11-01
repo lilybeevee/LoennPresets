@@ -16,7 +16,7 @@ function presetUtils.toLookup(tbl)
 end
 
 function presetUtils.checkVersion()
-    return meta.version == version("0.7.4") or meta.version == version("0.0.0-dev")
+    return meta.version == version("0.7.6") or meta.version == version("0.0.0-dev")
 end
 
 function presetUtils.saveSettings()
