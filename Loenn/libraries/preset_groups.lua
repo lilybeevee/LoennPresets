@@ -312,6 +312,15 @@ function presetGroups.updatePersistence()
         presetGroups.setPersistenceGroupForMap(state.filename, presetGroups.current)
     end
     persistence.currentGroup = presetGroups.current
+
+    local presetTool = toolHandler.tools["presets"] or {name = "presets", group = "presets"}
+    local groupMaterial = presetGroups.current
+
+    if presetGroups.current == "global" then
+        groupMaterial = " < Global Group > "
+    end
+
+    toolUtils.setPersistenceMaterial(presetTool, "presetGroups", groupMaterial)
 end
 
 function presetGroups.setCurrent(name, createIfMissing, copyGroup)

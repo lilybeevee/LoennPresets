@@ -1,4 +1,5 @@
 local modHandler = require("mods")
+local sceneHandler = require("scene_handler")
 local logging = require("logging")
 
 local presetGroups = modHandler.requireFromPlugin("libraries.preset_groups")
@@ -14,6 +15,8 @@ function device.editorMapLoaded(filename)
         presetGroups.setPersistenceGroupForMap(filename, presetGroups.current)
     else
         presetGroups.setCurrent(targetGroup)
+
+        sceneHandler.sendEvent("loennPresetsMapLoaded", targetGroup)
     end
 end
 

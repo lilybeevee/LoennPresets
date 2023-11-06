@@ -244,6 +244,10 @@ function tool.loennPresetsGroupsUpdated()
     updateGroups(true)
 end
 
+function tool.loennPresetsMapLoaded(newGroup)
+    updateSelectedGroup(true)
+end
+
 function tool.load()
     if not presetUtils.checkVersion() then
         toolHandler.tools[tool.name] = nil
