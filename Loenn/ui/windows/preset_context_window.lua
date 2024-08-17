@@ -12,24 +12,17 @@ local debugUtils = require("debug_utils")
 local toolHandler = require("tools")
 local toolUtils = require("tool_utils")
 
+local windowPersister = require("ui.window_position_persister")
+local windowPersisterName = "LoennPresets.preset_context_window"
+
 local presets = mods.requireFromPlugin("libraries.presets")
 
 local contextWindow = {}
 
 local contextGroup
-local window
-local windowPreviousX = 0
-local windowPreviousY = 0
 
 local function loennPresetsContextMenuCallback(group, preset, new)
     contextWindow.createContextMenu(preset, new)
-end
-
-local function contextWindowUpdate(orig, self, dt)
-    orig(self, dt)
-
-    windowPreviousX = self.x
-    windowPreviousY = self.y
 end
 
 local function getWindowTitle(language, preset)
@@ -52,12 +45,16 @@ local function updateFavorites(layer, oldName, newName, favorite)
     end
 end
 
-function contextWindow.saveChangesCallback(preset, formData, new)
+function contextWindow.saveChangesCallback(context, preset, formData, new)
     return function(formFields)
         local newData = form.getFormData(formFields)
 
         local oldName = preset.name
         local newName = newData.name
+
+        if preset.global then
+            newName = preset.name
+        end
 
         local nameValid = newName ~= ""
 
@@ -82,7 +79,7 @@ function contextWindow.saveChangesCallback(preset, formData, new)
 
         sceneHandler.sendEvent("loennPresetsUpdated")
 
-        window:removeSelf()
+        context.window:removeSelf()
     end
 end
 
@@ -92,7 +89,7 @@ function contextWindow.editPropertiesCallback(preset)
     end
 end
 
-function contextWindow.deleteCallback(preset)
+function contextWindow.deleteCallback(context ,preset)
     return function()
         if preset.global then
             -- should never happen
@@ -105,7 +102,7 @@ function contextWindow.deleteCallback(preset)
 
         sceneHandler.sendEvent("loennPresetsUpdated")
 
-        window:removeSelf()
+        context.window:removeSelf()
     end
 end
 
@@ -156,8 +153,6 @@ local function prepareFormData(preset, language, new)
 end
 
 function contextWindow.createContextMenu(preset, new)
-    local windowX = windowPreviousX
-    local windowY = windowPreviousY
     local language = languageRegistry.getLanguage()
 
     local formData, fieldInformation, fieldOrder = prepareFormData(preset, language, new)
@@ -167,10 +162,12 @@ function contextWindow.createContextMenu(preset, new)
         saveChangesLanguage = language.ui.LoennPresets.preset_context_window.button.add_preset
     end
 
+    local context = {}
+
     local buttons = {{
             text = tostring(saveChangesLanguage),
             formMustBeValid = true,
-            callback = contextWindow.saveChangesCallback(preset, formData, new)
+            callback = contextWindow.saveChangesCallback(context, preset, formData, new)
         }, {
             text = tostring(language.ui.LoennPresets.preset_context_window.button.edit_properties),
             callback = contextWindow.editPropertiesCallback(preset)
@@ -180,28 +177,27 @@ function contextWindow.createContextMenu(preset, new)
     if not new and not preset.global then
         table.insert(buttons,{
             text = tostring(language.ui.LoennPresets.preset_context_window.button.delete),
-            callback = contextWindow.deleteCallback(preset)
+            callback = contextWindow.deleteCallback(context, preset)
         })
     end
 
     local windowTitle = getWindowTitle(language, preset)
-    local selectionForm = form.getForm(buttons, formData, {
+    local selectionForm, formFields = form.getForm(buttons, formData, {
         fields = fieldInformation,
         fieldOrder = fieldOrder
     })
 
-    window = uiElements.window(windowTitle, selectionForm):with({
-        x = windowX,
-        y = windowY,
+    local window = uiElements.window(windowTitle, selectionForm)
+    local windowCloseCallback = windowPersister.getWindowCloseCallback(windowPersisterName)
 
-        updateHidden = true
-    }):hook({
-        update = contextWindowUpdate
-    })
+    context.window = window
 
+    windowPersister.trackWindow(windowPersisterName, window)
     contextGroup.parent:addChild(window)
-    widgetUtils.addWindowCloseButton(window)
+    widgetUtils.addWindowCloseButton(window, windowCloseCallback)
+    widgetUtils.preventOutOfBoundsMovement(window)
     form.prepareScrollableWindow(window)
+    form.addTitleChangeHandler(window, windowTitle, formFields)
 
     return window
 end

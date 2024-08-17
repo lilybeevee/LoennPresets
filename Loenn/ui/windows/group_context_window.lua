@@ -1,3 +1,4 @@
+local ui = require("ui")
 local uiElements = require("ui.elements")
 
 local mods = require("mods")
@@ -12,24 +13,17 @@ local debugUtils = require("debug_utils")
 local toolHandler = require("tools")
 local toolUtils = require("tool_utils")
 
+local windowPersister = require("ui.window_position_persister")
+local windowPersisterName = "LoennPresets.group_context_window"
+
 local presetGroups = mods.requireFromPlugin("libraries.preset_groups")
 
 local contextWindow = {}
 
 local contextGroup
-local window
-local windowPreviousX = 0
-local windowPreviousY = 0
 
 local function loennPresetsGroupContextMenuCallback(group, groupName, new)
     contextWindow.createContextMenu(groupName, new)
-end
-
-local function contextWindowUpdate(orig, self, dt)
-    orig(self, dt)
-
-    windowPreviousX = self.x
-    windowPreviousY = self.y
 end
 
 local function getWindowTitle(language, groupName, new)
@@ -43,7 +37,7 @@ local function getWindowTitle(language, groupName, new)
     end
 end
 
-function contextWindow.saveChangesCallback(groupName)
+function contextWindow.saveChangesCallback(context, groupName)
     return function(formFields)
         local data = form.getFormData(formFields)
 
@@ -62,11 +56,11 @@ function contextWindow.saveChangesCallback(groupName)
 
         sceneHandler.sendEvent("loennPresetsGroupsUpdated")
 
-        window:removeSelf()
+        context.window:removeSelf()
     end
 end
 
-function contextWindow.createGroupCallback(copy)
+function contextWindow.createGroupCallback(context, copy)
     return function(formFields)
         local data = form.getFormData(formFields)
 
@@ -79,11 +73,11 @@ function contextWindow.createGroupCallback(copy)
 
         sceneHandler.sendEvent("loennPresetsGroupsUpdated")
 
-        window:removeSelf()
+        context.window:removeSelf()
     end
 end
 
-function contextWindow.deleteGroupCallback(groupName)
+function contextWindow.deleteGroupCallback(context, groupName)
     return function()
         if groupName == "global" then
             -- should be unreachable
@@ -97,7 +91,7 @@ function contextWindow.deleteGroupCallback(groupName)
 
         sceneHandler.sendEvent("loennPresetsGroupsUpdated")
 
-        window:removeSelf()
+        context.window:removeSelf()
     end
 end
 
@@ -117,49 +111,48 @@ local function prepareFormData(groupName, language)
 end
 
 function contextWindow.createContextMenu(groupName, new)
-    local windowX = windowPreviousX
-    local windowY = windowPreviousY
     local language = languageRegistry.getLanguage()
 
     local formData, fieldInformation, fieldOrder = prepareFormData(groupName, language)
     local buttons
 
+    local context = {}
+
     if new then
         buttons = {{
             text = tostring(language.ui.LoennPresets.group_context_window.button.create),
-            callback = contextWindow.createGroupCallback(false)
+            callback = contextWindow.createGroupCallback(context, false)
         }, {
             text = tostring(language.ui.LoennPresets.group_context_window.button.create_from_current),
-            callback = contextWindow.createGroupCallback(true)
+            callback = contextWindow.createGroupCallback(context, true)
         }}
     else
         buttons = {{
             text = tostring(language.ui.LoennPresets.group_context_window.button.save_changes),
-            callback = contextWindow.saveChangesCallback(groupName)
+            callback = contextWindow.saveChangesCallback(context, groupName)
         }, {
             text = tostring(language.ui.LoennPresets.group_context_window.button.delete),
-            callback = contextWindow.deleteGroupCallback(groupName)
+            callback = contextWindow.deleteGroupCallback(context, groupName)
         }}
     end
 
     local windowTitle = getWindowTitle(language, groupName, new)
-    local selectionForm = form.getForm(buttons, formData, {
+    local selectionForm, formFields = form.getForm(buttons, formData, {
         fields = fieldInformation,
         fieldOrder = fieldOrder
     })
 
-    window = uiElements.window(windowTitle, selectionForm):with({
-        x = windowX,
-        y = windowY,
+    local window = uiElements.window(windowTitle, selectionForm)
+    local windowCloseCallback = windowPersister.getWindowCloseCallback(windowPersisterName)
 
-        updateHidden = true
-    }):hook({
-        update = contextWindowUpdate
-    })
+    context.window = window
 
+    windowPersister.trackWindow(windowPersisterName, window)
     contextGroup.parent:addChild(window)
-    widgetUtils.addWindowCloseButton(window)
+    widgetUtils.addWindowCloseButton(window, windowCloseCallback)
+    widgetUtils.preventOutOfBoundsMovement(window)
     form.prepareScrollableWindow(window)
+    form.addTitleChangeHandler(window, windowTitle, formFields)
 
     return window
 end

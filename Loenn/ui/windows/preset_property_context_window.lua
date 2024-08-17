@@ -6,22 +6,15 @@ local form = require("ui.forms.form")
 local layerHandlers = require("layer_handlers")
 local formUtils = require("ui.utils.forms")
 
+local windowPersister = require("ui.window_position_persister")
+local windowPersisterName = "LoennPresets.preset_property_context_window"
+
 local contextWindow = {}
 
 local contextGroup
-local window
-local windowPreviousX = 0
-local windowPreviousY = 0
 
 local function loennPresetsPropertyContextMenuCallback(group, preset)
     contextWindow.createContextMenu(preset)
-end
-
-local function contextWindowUpdate(orig, self, dt)
-    orig(self, dt)
-
-    windowPreviousX = self.x
-    windowPreviousY = self.y
 end
 
 local function getWindowTitle(language, preset)
@@ -32,7 +25,7 @@ local function getWindowTitle(language, preset)
 end
 
 -- TODO - Add history support
-function contextWindow.saveChangesCallback(preset, dummyData)
+function contextWindow.saveChangesCallback(context, preset, dummyData)
     return function(formFields)
         local newData = form.getFormData(formFields)
 
@@ -47,7 +40,7 @@ function contextWindow.saveChangesCallback(preset, dummyData)
             preset.data[k] = v
         end
 
-        window:removeSelf()
+        context.window:removeSelf()
     end
 end
 
@@ -59,37 +52,37 @@ local function prepareFormData(layer, item, language)
 end
 
 function contextWindow.createContextMenu(preset)
-    local windowX = windowPreviousX
-    local windowY = windowPreviousY
     local language = languageRegistry.getLanguage()
 
     local dummyData, fieldInformation, fieldOrder = prepareFormData(preset.layer, preset.data, language)
+
+    local context = {}
+
     local buttons = {
         {
             text = tostring(language.ui.selection_context_window.save_changes),
             formMustBeValid = true,
-            callback = contextWindow.saveChangesCallback(preset, dummyData)
+            callback = contextWindow.saveChangesCallback(context, preset, dummyData)
         }
     }
 
     local windowTitle = getWindowTitle(language, preset)
-    local selectionForm = form.getForm(buttons, dummyData, {
+    local selectionForm, formFields = form.getForm(buttons, dummyData, {
         fields = fieldInformation,
         fieldOrder = fieldOrder
     })
 
-    window = uiElements.window(windowTitle, selectionForm):with({
-        x = windowX,
-        y = windowY,
+    local window = uiElements.window(windowTitle, selectionForm)
+    local windowCloseCallback = windowPersister.getWindowCloseCallback(windowPersisterName)
 
-        updateHidden = true
-    }):hook({
-        update = contextWindowUpdate
-    })
+    context.window = window
 
+    windowPersister.trackWindow(windowPersisterName, window)
     contextGroup.parent:addChild(window)
-    widgetUtils.addWindowCloseButton(window)
+    widgetUtils.addWindowCloseButton(window, windowCloseCallback)
+    widgetUtils.preventOutOfBoundsMovement(window)
     form.prepareScrollableWindow(window)
+    form.addTitleChangeHandler(window, windowTitle, formFields)
 
     return window
 end

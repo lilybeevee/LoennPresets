@@ -58,7 +58,7 @@ local function updatePresets(layer)
         local displayName = preset.name
 
         if preset.global then
-            displayName = "^ " .. displayName
+            displayName = "(G) " .. displayName
         end
 
         table.insert(presetsAvailable, displayName)
@@ -89,12 +89,14 @@ end
 local function updateGroups(sendEvent)
     groupsAvailable = {
         noGroupMat,
-        " < New ... > ",
-        " < Global Group > "
+        " < Create New > ",
+        " < Edit Group > ",
+        "(G) Global Group"
     }
     groupData = {
-        [" < New ... > "] = {type = "new"},
-        [" < Global Group > "] = {type = "group", name = "global"}
+        [" < Create New > "] = {type = "new"},
+        [" < Edit Group > "] = {type = "edit"},
+        ["(G) Global Group"] = {type = "group", name = "global"}
     }
 
     local groups = presetGroups.getSavedGroups()
@@ -169,14 +171,24 @@ function tool.setMaterial(material)
 
         if data.type == "new" then
             sendGroupContextMenuEvent(nil, true)
-            toolUtils.sendMaterialEvent(tool, tool.layer, "")
+            updateSelectedGroup(true)
+            return false
+        elseif data.type == "edit" then
+            if presetGroups.current ~= "global" then
+                sendGroupContextMenuEvent(presetGroups.current, false)
+            end
+            updateSelectedGroup(true)
             return false
         elseif data.type == "group" then
+            logging.info("Switched: " .. presetGroups.current .. " -> " .. data.name)
             if presetGroups.current ~= data.name then
+                logging.info("Groups are different")
                 if presetGroups.setCurrent(data.name) then
+                    logging.info("Notifying")
                     notifications.notify("Switched preset group to " .. material)
                     tool.material = material
                 else
+                    logging.info("Not notifying")
                     -- Selected group does not exist
                     toolUtils.sendMaterialEvent(tool, tool.layer, "")
                     return false
@@ -209,12 +221,7 @@ function tool.mouseclicked(x, y, button, istouch, presses)
     local actionButton = configs.editor.toolActionButton
 
     if button == actionButton then
-        if tool.layer == "presetGroups" then
-            local data = groupData[tool.material] or {}
-            if data.type == "group" and data.name ~= "global" then
-                sendGroupContextMenuEvent(data.name, false)
-            end
-        else
+        if tool.layer ~= "presetGroups" then
             local cursorX, cursorY = toolUtils.getCursorPositionInRoom(x, y)
 
             if cursorX and cursorY then

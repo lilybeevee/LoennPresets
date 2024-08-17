@@ -317,7 +317,7 @@ function presetGroups.updatePersistence()
     local groupMaterial = presetGroups.current
 
     if presetGroups.current == "global" then
-        groupMaterial = " < Global Group > "
+        groupMaterial = "(G) Global Group"
     end
 
     toolUtils.setPersistenceMaterial(presetTool, "presetGroups", groupMaterial)
