@@ -15,8 +15,10 @@ function presetUtils.toLookup(tbl)
     return lookup
 end
 
+-- This should make sure we're running the latest supported version, but it's disabled while I'm not actively maintaining it
 function presetUtils.checkVersion()
-    return meta.version == version("0.7.10") or meta.version == version("0.0.0-dev")
+    --return meta.version == version("0.7.10") or meta.version == version("0.0.0-dev")
+    return true
 end
 
 function presetUtils.saveSettings()
