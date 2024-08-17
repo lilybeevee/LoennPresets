@@ -180,15 +180,11 @@ function tool.setMaterial(material)
             updateSelectedGroup(true)
             return false
         elseif data.type == "group" then
-            logging.info("Switched: " .. presetGroups.current .. " -> " .. data.name)
             if presetGroups.current ~= data.name then
-                logging.info("Groups are different")
                 if presetGroups.setCurrent(data.name) then
-                    logging.info("Notifying")
                     notifications.notify("Switched preset group to " .. material)
                     tool.material = material
                 else
-                    logging.info("Not notifying")
                     -- Selected group does not exist
                     toolUtils.sendMaterialEvent(tool, tool.layer, "")
                     return false

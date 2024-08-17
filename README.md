@@ -23,9 +23,9 @@ Select the **Presets** tool, and select the **Preset Groups** option.
 
 The first time you use the plugin, the global group will be selected. All presets and favorites made in the global group will apply to every other preset group.
 
-To **create** a new group, select the "New..." option, name your group, and add it to the list.
+To **create** a new group, select the "Create New" option, name your group, and add it to the list.
 
-To **rename/delete** a group, select it and then click anywhere on the map to open the settings window. This will not work for the global group.
+To **rename/delete** a group, select it and then select the "Edit Group" option. This will not work for the global group.
 
 Presets from the global group cannot be renamed or deleted from any other group, but their properties can be changed.
 
