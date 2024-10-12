@@ -50,6 +50,16 @@ function presetGroups.setSavedGroups(value)
     presetUtils.saveSettings()
 end
 
+function presetGroups.getSavedBackups()
+    return settings.groupBackups or {}
+end
+
+function presetGroups.setSavedBackups(value)
+    settings.groupBackups = value
+
+    presetUtils.saveSettings()
+end
+
 function presetGroups.getPersistenceGroupForMap(filename)
     return utils.getPath(persistence, {"mapGroup", filename})
 end
@@ -120,6 +130,63 @@ function presetGroups.updateGroupValue(name, key, func)
     end
 
     presetGroups.setGroup(name, group)
+end
+
+function presetGroups.saveBackup(groupName)
+    groupName = groupName or presetGroups.current
+
+    local group = presetGroups.getGroup(groupName)
+
+    if not group then
+        return
+    end
+
+    local savedBackups = presetGroups.getSavedBackups()
+    local groupBackups = savedBackups[groupName] or {}
+
+    if #groupBackups > 0 and utils.equals(group, groupBackups[1].data) then
+        return
+    end
+
+    local backupName = groupName .. " - " .. os.date("%Y-%m-%d %H:%M:%S")
+
+    table.insert(groupBackups, 1, {
+        name = backupName,
+        data = utils.deepcopy(group)
+    })
+
+    if #groupBackups > 10 then
+        table.remove(groupBackups, #groupBackups)
+    end
+
+    savedBackups[groupName] = groupBackups
+    presetGroups.setSavedBackups(savedBackups)
+end
+
+function presetGroups.renameBackups(oldName, newName)
+    local savedBackups = presetGroups.getSavedBackups()
+
+    if oldName == newName or not savedBackups[oldName] then
+        return
+    end
+
+    local oldBackups = savedBackups[oldName]
+
+    savedBackups[oldName] = nil
+
+    if savedBackups[newName] then
+        for i, backup in ipairs(oldBackups) do
+            table.insert(savedBackups[newName], i, backup)
+        end
+
+        while #savedBackups[newName] > 20 do
+            table.remove(savedBackups[newName], #savedBackups[newName])
+        end
+    else
+        savedBackups[newName] = oldBackups
+    end
+
+    presetGroups.setSavedBackups(savedBackups)
 end
 
 local function saveFavorites(name, group, globals)
@@ -323,7 +390,9 @@ function presetGroups.updatePersistence()
     toolUtils.setPersistenceMaterial(presetTool, "presetGroups", groupMaterial)
 end
 
-function presetGroups.setCurrent(name, createIfMissing, copyGroup)
+function presetGroups.setCurrent(name, options)
+    options = options or {}
+
     local oldName = presetGroups.current
 
     if oldName == name then
@@ -341,11 +410,19 @@ function presetGroups.setCurrent(name, createIfMissing, copyGroup)
         sceneHandler.sendEvent("loennPresetsGroupSaved", oldName, group, globalGroup)
     end)
 
+    if options.backup ~= false then
+        presetGroups.saveBackup(oldName)
+
+        if oldName ~= "global" then
+            presetGroups.saveBackup("global")
+        end
+    end
+
     local newGroup = presetGroups.getGroup(name)
 
     if not newGroup then
-        if createIfMissing then
-            newGroup = createNewGroup(copyGroup)
+        if options.create then
+            newGroup = createNewGroup(options.copy)
             presetGroups.setGroup(name, newGroup)
         else
             return false
@@ -366,6 +443,73 @@ function presetGroups.setCurrent(name, createIfMissing, copyGroup)
     sceneHandler.sendEvent("loennPresetsGroupLoaded", name, newGroup, globalGroup)
 
     return true
+end
+
+function presetGroups.saveGroupAndBackup(groupName)
+    groupName = groupName or presetGroups.current
+
+    local globalGroup = presetGroups.getGroup("global")
+
+    presetGroups.updateGroup(groupName, function(group)
+        if not group then return end
+
+        saveFavorites(groupName, group, globalGroup)
+        savePresets(groupName, group, globalGroup)
+
+        sceneHandler.sendEvent("loennPresetsGroupSaved", groupName, group, globalGroup)
+    end)
+
+    presetGroups.saveBackup(groupName)
+
+    if groupName ~= "global" then
+        presetGroups.saveBackup("global")
+    end
+end
+
+function presetGroups.loadBackup(name, index)
+    index = index or 1
+
+    local group = presetGroups.getGroup(name)
+
+    local savedBackups = presetGroups.getSavedBackups()
+    local groupBackups = savedBackups[name] or {}
+
+    if not group or not groupBackups[index] then
+        return false
+    end
+
+    local backup = groupBackups[index]
+
+    backup.data = backup.data or {}
+    backup.data.name = backup.data.name or name
+
+    local newName = backup.data.name
+
+    if newName ~= name then
+        presetGroups.setGroup(name, nil)
+        presetGroups.setGroup(newName, backup.data)
+
+        presetGroups.renameBackups(name, newName)
+    else
+        presetGroups.setGroup(name, backup.data)
+    end
+
+    if presetGroups.current ~= name then
+        return true, newName
+    end
+
+    local newGroup = presetGroups.getGroup(newName)
+    local globalGroup = presetGroups.getGroup("global")
+
+    presetGroups.current = newName
+    presetGroups.updatePersistence()
+
+    loadFavorites(newName, newGroup, globalGroup)
+    loadPresets(newName, newGroup, globalGroup)
+
+    sceneHandler.sendEvent("loennPresetsGroupLoaded", newName, newGroup, globalGroup)
+
+    return true, newName
 end
 
 function presetGroups.getFirstAvailableGroup()

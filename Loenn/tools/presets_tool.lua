@@ -174,9 +174,7 @@ function tool.setMaterial(material)
             updateSelectedGroup(true)
             return false
         elseif data.type == "edit" then
-            if presetGroups.current ~= "global" then
-                sendGroupContextMenuEvent(presetGroups.current, false)
-            end
+            sendGroupContextMenuEvent(presetGroups.current, false)
             updateSelectedGroup(true)
             return false
         elseif data.type == "group" then

@@ -20,4 +20,8 @@ function device.editorMapLoaded(filename)
     end
 end
 
+function device.editorMapSaved(filename)
+    presetGroups.saveGroupAndBackup()
+end
+
 return device

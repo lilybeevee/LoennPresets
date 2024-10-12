@@ -41,10 +41,29 @@ function contextWindow.saveChangesCallback(context, groupName)
     return function(formFields)
         local data = form.getFormData(formFields)
 
+        local backupIndex = tonumber(data.backup)
+
+        if backupIndex and backupIndex > 0 then
+            presetGroups.loadBackup(groupName, backupIndex)
+
+            sceneHandler.sendEvent("loennPresetsGroupsUpdated")
+
+            context.window:removeSelf()
+            return
+        end
+
+        if groupName == "global" then
+            context.window:removeSelf()
+            return
+        end
+
         if data.name == "" or (groupName ~= data.name and presetGroups.getGroup(data.name)) then
             -- Invalid name
             return false
         end
+
+        presetGroups.saveGroupAndBackup(groupName)
+        presetGroups.renameBackups(groupName, data.name)
 
         local group = presetGroups.getGroup(groupName)
 
@@ -69,7 +88,7 @@ function contextWindow.createGroupCallback(context, copy)
             return false
         end
 
-        presetGroups.setCurrent(data.name, true, copy)
+        presetGroups.setCurrent(data.name, {create = true, copy = true})
 
         sceneHandler.sendEvent("loennPresetsGroupsUpdated")
 
@@ -84,10 +103,12 @@ function contextWindow.deleteGroupCallback(context, groupName)
             return
         end
 
+        presetGroups.saveBackup(groupName)
+
         presetGroups.setGroup(groupName, nil)
 
         local targetGroup = presetGroups.getFirstAvailableGroup()
-        presetGroups.setCurrent(targetGroup)
+        presetGroups.setCurrent(targetGroup, {backup = false})
 
         sceneHandler.sendEvent("loennPresetsGroupsUpdated")
 
@@ -95,17 +116,44 @@ function contextWindow.deleteGroupCallback(context, groupName)
     end
 end
 
-local function prepareFormData(groupName, language)
-    local formData = {name = groupName or "New Group"}
+local function createBackupOptions(groupName)
+    local options = {
+        {"...", "0"}
+    }
 
-    local fieldInformation = {
-        name = {
+    local savedBackups = presetGroups.getSavedBackups()
+    local groupBackups = savedBackups[groupName] or {}
+
+    for i, backup in ipairs(groupBackups) do
+        table.insert(options, {backup.name, tostring(i)})
+    end
+
+    return options
+end
+
+local function prepareFormData(groupName, new, language)
+    local formData = {}
+    local fieldInformation = {}
+
+    if groupName ~= "global" then
+        formData.name = groupName or "New Group"
+        fieldInformation.name = {
             displayName = tostring(language.ui.LoennPresets.group_context_window.field.name.name),
             tooltipText = tostring(language.ui.LoennPresets.group_context_window.field.name.description),
         }
-    }
+    end
 
-    local fieldOrder = {"name"}
+    if not new then
+        formData.backup = "..."
+        fieldInformation.backup = {
+            displayName = tostring(language.ui.LoennPresets.group_context_window.field.backup.name),
+            tooltipText = tostring(language.ui.LoennPresets.group_context_window.field.backup.description),
+            editable = false,
+            options = createBackupOptions(groupName)
+        }
+    end
+
+    local fieldOrder = {"name", "backup"}
 
     return formData, fieldInformation, fieldOrder
 end
@@ -113,7 +161,7 @@ end
 function contextWindow.createContextMenu(groupName, new)
     local language = languageRegistry.getLanguage()
 
-    local formData, fieldInformation, fieldOrder = prepareFormData(groupName, language)
+    local formData, fieldInformation, fieldOrder = prepareFormData(groupName, new, language)
     local buttons
 
     local context = {}
@@ -130,10 +178,13 @@ function contextWindow.createContextMenu(groupName, new)
         buttons = {{
             text = tostring(language.ui.LoennPresets.group_context_window.button.save_changes),
             callback = contextWindow.saveChangesCallback(context, groupName)
-        }, {
-            text = tostring(language.ui.LoennPresets.group_context_window.button.delete),
-            callback = contextWindow.deleteGroupCallback(context, groupName)
         }}
+        if groupName ~= "global" then
+            table.insert(buttons, {
+                text = tostring(language.ui.LoennPresets.group_context_window.button.delete),
+                callback = contextWindow.deleteGroupCallback(context, groupName)
+            })
+        end
     end
 
     local windowTitle = getWindowTitle(language, groupName, new)

@@ -30,4 +30,6 @@ ui.LoennPresets.group_context_window.button.create=Create New
 ui.LoennPresets.group_context_window.button.create_from_current=Copy Current Presets
 
 ui.LoennPresets.group_context_window.field.name.name=Name
-ui.LoennPresets.group_context_window.field.name.description=The name of the preset
+ui.LoennPresets.group_context_window.field.name.description=The name of the preset group
+ui.LoennPresets.group_context_window.field.backup.name=Backups
+ui.LoennPresets.group_context_window.field.backup.description=Select a backup to load (applied when saving changes)
