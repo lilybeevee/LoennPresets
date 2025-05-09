@@ -220,7 +220,7 @@ function tool.mouseclicked(x, y, button, istouch, presses)
 
             if cursorX and cursorY then
                 local room = state.getSelectedRoom()
-                local targets = selectionUtils.getContextSelections(room, tool.layer, cursorX, cursorY)
+                local targets = selectionUtils.getContextSelections(room, tool.layer, 0, cursorX, cursorY)
 
                 if targets and #targets > 0 then
                     createNewPreset(targets[1].item)
